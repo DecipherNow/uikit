@@ -99,7 +99,10 @@ gulp.task('dist', ['dist-themes-core'], function(done) {
      */
     var sequence           = ['sass', 'dist-core-minify', 'dist-core-header'],
         packageManagerTask = gutil.env.P || gutil.env.packageManagerTask || false,
-        fonts              = gutil.env.f || gutil.env.fonts || false;
+        fonts              = gutil.env.f || gutil.env.fonts || false,
+        images             = gutil.env.i || gutil.env.images || false;
+
+    var postSequence       = ['replace_uikit_amd_dependency'];
 
     if (packageManagerTask && packageManagerTask === 'dist-packageJson-file') {
         sequence.push('dist-packageJson-file');
@@ -110,11 +113,15 @@ gulp.task('dist', ['dist-themes-core'], function(done) {
     if (fonts) {
         sequence.push('fonts');
     }
+
+    if (images) {
+        sequence.push('images');
+    }
     /**
      * Decipher end
      */
 
-    runSequence(sequence, function(){
+    runSequence(sequence, postSequence, function(){
 
         if (gutil.env.m || gutil.env.min) {
             gulp.src(['./dist/**/*.css', './dist/**/*.js', '!./dist/**/*.min.css', '!./dist/**/*.min.js'])
@@ -218,9 +225,9 @@ gulp.task('help', function(done) {
         /**
          * Decipher start
          */
-        '-d, --dev': '',
         '-f, --fonts': '',
-        '-P, --packageManagerTask': ''
+        '-P, --packageManagerTask': '',
+        '-i, --images': ''
         /**
          * Decipher end
          */
@@ -287,7 +294,7 @@ gulp.task('dist-bower-file', function(done) {
             "fonts/FontAwesome.otf"
         ],
         "dependencies": {
-            "jquery": ">= 1.9.0"
+            "jquery": "~2.1.0"
         },
         "ignore": [
             "node_modules",
@@ -500,19 +507,12 @@ gulp.task('dist-themes-core', ['dist-themes'], function(done) {
         /**
          * Decipher start
          */
-        var modifyVars,
-            devMode = gutil.env.d || gutil.env.dev || false;
-
-        if (devMode) {
+        var modifyVars = {};
+        if (theme.name !== 'decipher') {
             modifyVars = {
                 'global-image-path': ('"../../'+theme.path+'/images"'),
                 'global-font-path': ('"../../'+theme.path+'/fonts"')
-            };
-        } else {
-            modifyVars = {
-                'global-image-path': ('"/images"'),
-                'global-font-path': ('"/fonts"')
-            };
+            }
         }
         /**
          * Decipher end
@@ -607,6 +607,7 @@ gulp.task('prefix', function(done) {
 
     gulp.src(['./dist/**/*.css', './dist/**/*.less', './dist/**/*.scss', './dist/**/*.js'])
         .pipe(replace(/(uk-([a-z\d\-]+))/g, prefix+'-$2'))
+        .pipe(replace(/data-uk-/g, 'data-'+prefix+'-'))
         .pipe(gulp.dest('./dist'))
         .on('end', done);
 });
@@ -770,10 +771,42 @@ gulp.task('fonts', function(done) {
 
 });
 
+gulp.task('images', function(done) {
+    var images = gutil.env.i || gutil.env.images || false;
+
+    if (images) {
+
+        var imagePath = 'custom/decipher/images';
+
+        fs.stat(imagePath, function(err) {
+
+            if (err) {
+                var error = new Error(err);
+                console.log(error.message);
+                done();
+            } else {
+                gulp
+                    .src(imagePath + '/*')
+                    .pipe(gulp.dest('dist/images/'))
+                done();
+            }
+
+        });
+    }
+
+});
+
 gulp.task('dist-packageJson-file', function(done) {
     gulp.src('custom/decipher/package.json')
         .pipe(gulp.dest('dist'));
 });
+
+gulp.task('replace_uikit_amd_dependency', function(done) {
+    return gulp.src(['dist/js/components/*.js', 'dist/js/components/*.min.js'])
+        .pipe(replace(["uikit"], ["github:DecipherNow/uikit-decipher-theme@master/js/uikit"]))
+        .pipe(gulp.dest('dist/js/components'));
+});
+
 /**
  * Decipher end
  */
