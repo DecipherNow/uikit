@@ -803,7 +803,7 @@ gulp.task('dist-packageJson-file', function(done) {
 
 gulp.task('replace_uikit_amd_dependency', function(done) {
     return gulp.src(['dist/js/components/*.js', 'dist/js/components/*.min.js'])
-        .pipe(replace(["uikit"], ["github:DecipherNow/uikit-decipher-theme@master/js/uikit"]))
+        .pipe(replace(["['uikit']"], ["['github:DecipherNow/uikit-decipher-theme@master/js/uikit']"]))
         .pipe(gulp.dest('dist/js/components'));
 });
 
